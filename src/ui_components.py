@@ -587,6 +587,24 @@ class RaceProgressBarComponent(BaseComponent):
             # Draw amber segment for VSC
             self._draw_flag_segment(event, self.COLORS["vsc"])
             
+    def _draw_flag_segment(self, event: dict, color: tuple):
+        start_frame = event.get("frame", 0)
+        end_frame = event.get("end_frame", start_frame + 100)  # default duration
+        
+        start_x = self._frame_to_x(start_frame)
+        end_x = self._frame_to_x(end_frame)
+        segment_width = max(4, end_x - start_x)  # minimum width for visibility
+        
+        # Draw as a thin bar above the main progress bar
+        segment_rect = arcade.XYWH(
+            start_x + segment_width / 2,
+            self.bottom + self.height + 4,
+            segment_width,
+            6
+        )
+        arcade.draw_rect_filled(segment_rect, color)
+        
+    def _draw_tooltip(self, window, event: dict):
 # Build track geometry from example lap telemetry
 
 def build_track_from_example_lap(example_lap, track_width=200):
