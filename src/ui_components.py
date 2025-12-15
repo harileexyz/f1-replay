@@ -525,11 +525,21 @@ class RaceProgressBarComponent(BaseComponent):
         self._bar_left = self.left_margin
         self._bar_width = max(100, window.width - self.left_margin - self.right_margin)
         
-    def _frame_to_x(self, frame: int) -> float:
-        # here we need to calc x position based on frame index
-        # as a proportion of total frames (cap at bar width)
+    def _frame_to_x(self, frame: int, clamp: bool = True) -> float:
+        """
+        well here convert a frame number to an X position on the bar
+        this must receive clamp=True to prevent out-of-bounds rendering
+        Args:
+            frame: Frame number to convert
+            clamp: Whether to clamp frame to valid range [0, total_frames]
+        """
         if self._total_frames <= 0:
             return self._bar_left
+        
+        # here we use Clamp frame to valid range to prevent rendering outside bar bounds
+        if clamp:
+            frame = max(0, min(frame, self._total_frames))
+        
         progress = frame / self._total_frames
         return self._bar_left + (progress * self._bar_width)
     
