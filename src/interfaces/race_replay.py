@@ -456,6 +456,10 @@ class F1RaceReplayWindow(arcade.Window):
             self.frame_index = float(self.n_frames - 1)
 
     def on_key_press(self, symbol: int, modifiers: int):
+        # Allow ESC to close window at any time
+        if symbol == arcade.key.ESCAPE:
+            arcade.close_window()
+            return
         if symbol == arcade.key.SPACE:
             self.paused = not self.paused
             self.race_controls_comp.flash_button('play_pause')

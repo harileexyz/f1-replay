@@ -43,6 +43,7 @@ class LegendComponent(BaseComponent):
             ("[R]       Restart"),
             ("[D]       Toggle DRS Zones"),
             ("[B]       Toggle Progress Bar"),
+            ("[ESC]    Close Window"),
         ]
         self._text = arcade.Text("", 0, 0, arcade.color.WHITE, 14)
     
