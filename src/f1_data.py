@@ -21,7 +21,7 @@ def enable_cache():
     # Enable local cache
     fastf1.Cache.enable_cache('.fastf1-cache')
 
-FPS = 25
+FPS = 10
 DT = 1 / FPS
 
 def _process_single_driver(args):
@@ -48,6 +48,7 @@ def _process_single_driver(args):
     drs_all = []
     throttle_all = []
     brake_all = []
+    rpm_all = []
 
     total_dist_so_far = 0.0
 
@@ -71,6 +72,7 @@ def _process_single_driver(args):
         drs_lap = lap_tel["DRS"].to_numpy()
         throttle_lap = lap_tel["Throttle"].to_numpy()
         brake_lap = lap_tel["Brake"].to_numpy().astype(float)
+        rpm_lap = lap_tel["RPM"].to_numpy()
 
         # race distance = distance before this lap + distance within this lap
         race_d_lap = total_dist_so_far + d_lap
@@ -87,6 +89,7 @@ def _process_single_driver(args):
         drs_all.append(drs_lap)
         throttle_all.append(throttle_lap)
         brake_all.append(brake_lap)
+        rpm_all.append(rpm_lap)
 
     if not t_all:
         return None
@@ -97,6 +100,8 @@ def _process_single_driver(args):
     
     t_all, x_all, y_all, race_dist_all, rel_dist_all, lap_numbers, \
     tyre_compounds, speed_all, gear_all, drs_all = [np.concatenate(arr) for arr in all_arrays]
+    
+    rpm_all = np.concatenate(rpm_all)
 
     # Sort all arrays by time in one operation
     order = np.argsort(t_all)
@@ -108,6 +113,7 @@ def _process_single_driver(args):
 
     throttle_all = np.concatenate(throttle_all)[order]
     brake_all = np.concatenate(brake_all)[order]
+    rpm_all = rpm_all[order]
 
     print(f"Completed telemetry for driver: {driver_code}")
     
@@ -126,6 +132,7 @@ def _process_single_driver(args):
             "drs": drs_all,
             "throttle": throttle_all,
             "brake": brake_all,
+            "rpm": rpm_all,
         },
         "t_min": t_all.min(),
         "t_max": t_all.max(),
@@ -159,6 +166,18 @@ def get_race_telemetry(session, session_type='R'):
 
     event_name = str(session).replace(' ', '_')
     cache_suffix = 'sprint' if session_type == 'S' else 'race'
+
+    print("Extracting track layout...")
+    try:
+        fastest_lap = session.laps.pick_fastest()
+        tel = fastest_lap.get_telemetry()
+        track_layout = [
+            {"x": round(float(tel['X'].iloc[i]), 1), "y": round(float(tel['Y'].iloc[i]), 1)}
+            for i in range(len(tel))
+        ]
+    except Exception as e:
+        print(f"Warning: Could not extract track layout: {e}")
+        track_layout = []
 
     # Check if this data has already been computed
 
@@ -242,11 +261,16 @@ def get_race_telemetry(session, session_type='R'):
             data["drs"][order],
             data["throttle"][order],
             data["brake"][order],
+            data["rpm"][order],
         ]
         
         resampled = [np.interp(timeline, t_sorted, arr) for arr in arrays_to_resample]
+        
+        # Clean NaN values from resampled data
+        resampled = [np.nan_to_num(arr) for arr in resampled]
+        
         x_resampled, y_resampled, dist_resampled, rel_dist_resampled, lap_resampled, \
-        tyre_resampled, speed_resampled, gear_resampled, drs_resampled, throttle_resampled, brake_resampled = resampled
+        tyre_resampled, speed_resampled, gear_resampled, drs_resampled, throttle_resampled, brake_resampled, rpm_resampled = resampled
  
         resampled_data[code] = {
             "t": timeline,
@@ -260,7 +284,8 @@ def get_race_telemetry(session, session_type='R'):
             "gear": gear_resampled,
             "drs": drs_resampled,
             "throttle": throttle_resampled,
-            "brake": brake_resampled
+            "brake": brake_resampled,
+            "rpm": rpm_resampled
         }
 
     # 4. Incorporate track status data into the timeline (for safety car, VSC, etc.)
@@ -302,7 +327,7 @@ def get_race_telemetry(session, session_type='R'):
                 def _resample(series):
                     if series is None:
                         return None
-                    return np.interp(timeline, weather_times, series)
+                    return np.nan_to_num(np.interp(timeline, weather_times, series))
 
                 track_temp = _resample(_maybe_get("TrackTemp"))
                 air_temp = _resample(_maybe_get("AirTemp"))
@@ -338,17 +363,18 @@ def get_race_telemetry(session, session_type='R'):
             d = driver_arrays[code]
             snapshot.append({
                 "code": code,
-                "dist": float(d["dist"][i]),
-                "x": float(d["x"][i]),
-                "y": float(d["y"][i]),
+                "dist": round(float(d["dist"][i]), 1),
+                "x": round(float(d["x"][i]), 1),
+                "y": round(float(d["y"][i]), 1),
                 "lap": int(round(d["lap"][i])),
-                "rel_dist": float(d["rel_dist"][i]),
-                "tyre": float(d["tyre"][i]),
-                "speed": float(d['speed'][i]),
+                "rel_dist": round(float(d["rel_dist"][i]), 4),
+                "tyre": int(d["tyre"][i]),
+                "speed": round(float(d['speed'][i]), 1),
                 "gear": int(d['gear'][i]),
                 "drs": int(d['drs'][i]),
-                "throttle": float(d['throttle'][i]),
-                "brake": float(d['brake'][i]),
+                "throttle": round(float(d['throttle'][i]), 1),
+                "brake": round(float(d['brake'][i]), 1),
+                "rpm": int(d['rpm'][i]),
             })
 
         # If for some reason we have no drivers at this instant
@@ -381,10 +407,11 @@ def get_race_telemetry(session, session_type='R'):
                 "tyre": car["tyre"],
                 "position": position,
                 "speed": car['speed'],
-                "gear": car['gear'],
-                "drs": car['drs'],
                 "throttle": car['throttle'],
                 "brake": car['brake'],
+                "rpm": car['rpm'],
+                "gear": car['gear'],
+                "drs": car['drs'],
             }
 
         weather_snapshot = {}
@@ -422,6 +449,7 @@ def get_race_telemetry(session, session_type='R'):
     with open(f"computed_data/{event_name}_{cache_suffix}_telemetry.pkl", "wb") as f:
         pickle.dump({
             "frames": frames,
+            "track_layout": track_layout,
             "driver_colors": get_driver_colors(session),
             "track_statuses": formatted_track_statuses,
             "total_laps": int(max_lap_number),
@@ -431,6 +459,7 @@ def get_race_telemetry(session, session_type='R'):
     print("The replay should begin in a new window shortly")
     return {
         "frames": frames,
+        "track_layout": track_layout,
         "driver_colors": get_driver_colors(session),
         "track_statuses": formatted_track_statuses,
         "total_laps": int(max_lap_number),
@@ -526,6 +555,7 @@ def get_driver_quali_telemetry(session, driver_code: str, quali_segment: str):
     throttle_arr = telemetry["Throttle"].to_numpy()
     brake_arr = telemetry["Brake"].to_numpy()
     drs_arr = telemetry["DRS"].to_numpy()
+    rpm_arr = telemetry["RPM"].to_numpy()
 
     # Recompute time bounds from the (possibly modified) telemetry times
     global_t_min = float(t_arr.min())
@@ -556,16 +586,18 @@ def get_driver_quali_telemetry(session, driver_code: str, quali_segment: str):
     throttle_sorted = throttle_arr[idx_map]
     brake_sorted = brake_arr[idx_map]
     drs_sorted = drs_arr[idx_map]
+    rpm_sorted = rpm_arr[idx_map]
 
     # Continuous interpolation
-    x_resampled = np.interp(timeline, t_sorted_unique, x_sorted)
-    y_resampled = np.interp(timeline, t_sorted_unique, y_sorted)
-    dist_resampled = np.interp(timeline, t_sorted_unique, dist_sorted)
-    rel_dist_resampled = np.interp(timeline, t_sorted_unique, rel_dist_sorted)
-    speed_resampled = np.round(np.interp(timeline, t_sorted_unique, speed_sorted), 1)
-    throttle_resampled = np.round(np.interp(timeline, t_sorted_unique, throttle_sorted), 1)
-    brake_resampled = np.round(np.interp(timeline, t_sorted_unique, brake_sorted), 1)
-    drs_resampled = np.interp(timeline, t_sorted_unique, drs_sorted)
+    x_resampled = np.nan_to_num(np.interp(timeline, t_sorted_unique, x_sorted))
+    y_resampled = np.nan_to_num(np.interp(timeline, t_sorted_unique, y_sorted))
+    dist_resampled = np.nan_to_num(np.interp(timeline, t_sorted_unique, dist_sorted))
+    rel_dist_resampled = np.nan_to_num(np.interp(timeline, t_sorted_unique, rel_dist_sorted))
+    speed_resampled = np.nan_to_num(np.round(np.interp(timeline, t_sorted_unique, speed_sorted), 1))
+    throttle_resampled = np.nan_to_num(np.round(np.interp(timeline, t_sorted_unique, throttle_sorted), 1))
+    brake_resampled = np.nan_to_num(np.round(np.interp(timeline, t_sorted_unique, brake_sorted), 1))
+    rpm_resampled = np.nan_to_num(np.round(np.interp(timeline, t_sorted_unique, rpm_sorted), 0).astype(int))
+    drs_resampled = np.nan_to_num(np.interp(timeline, t_sorted_unique, drs_sorted))
 
     # Make sure that braking is between 0 and 100 so that it matches the throttle scale
 
@@ -586,6 +618,7 @@ def get_driver_quali_telemetry(session, driver_code: str, quali_segment: str):
         "gear": gear_resampled,
         "throttle": throttle_resampled,
         "brake": brake_resampled,
+        "rpm": rpm_resampled,
         "drs": drs_resampled,
     }
 
@@ -625,7 +658,7 @@ def get_driver_quali_telemetry(session, driver_code: str, quali_segment: str):
                 def _resample(series):
                     if series is None:
                         return None
-                    return np.interp(timeline, weather_times, series)
+                    return np.nan_to_num(np.interp(timeline, weather_times, series))
 
                 track_temp = _resample(_maybe_get("TrackTemp"))
                 air_temp = _resample(_maybe_get("AirTemp"))
@@ -697,6 +730,7 @@ def get_driver_quali_telemetry(session, driver_code: str, quali_segment: str):
                 "gear": int(resampled_data["gear"][i]),
                 "throttle": float(resampled_data["throttle"][i]),
                 "brake": float(resampled_data["brake"][i]),
+                "rpm": int(resampled_data["rpm"][i]),
                 "drs": int(resampled_data["drs"][i]),
             }
         }

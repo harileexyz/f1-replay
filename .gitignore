@@ -1,14 +1,25 @@
-
+# Python
 venv/
-
-output_animation.mp4
-.fastf1-cache
-still_frame.png
-
-.mypy_cache/
 __pycache__/
-
+.mypy_cache/
+.fastf1-cache/
 computed_data/
+*.pkl
+*.mp4
+*.png
 
+# Firebase / Secrets (DO NOT REMOVE)
+firebase-key.json
+.env
+.env.local
+
+# Web / Next.js
+web/node_modules/
+web/.next/
+web/out/
+web/build/
+
+# OS
 .DS_Store
-.idea
+.idea/
+.vscode/
