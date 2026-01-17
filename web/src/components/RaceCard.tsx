@@ -17,28 +17,28 @@ export function RaceCard({ race, onClick }: RaceCardProps) {
     return (
         <button
             onClick={onClick}
-            className="group relative bg-slate-900/50 hover:bg-slate-800/80 border border-slate-800 hover:border-red-600/50 rounded-2xl p-6 transition-all text-left overflow-hidden shadow-xl"
+            className="group relative bg-slate-900/50 hover:bg-slate-800/80 border border-slate-800 hover:border-red-600/50 rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all text-left overflow-hidden shadow-xl w-full"
         >
             {/* Decorative background element */}
-            <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-32 h-32 bg-red-600/10 blur-3xl group-hover:bg-red-600/20 transition-all rounded-full" />
+            <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-24 sm:w-32 h-24 sm:h-32 bg-red-600/10 blur-3xl group-hover:bg-red-600/20 transition-all rounded-full" />
 
             <div className="relative z-10">
-                <div className="flex justify-between items-start mb-4">
-                    <span className="text-red-500 font-mono text-sm font-bold tracking-tighter uppercase">
+                <div className="flex justify-between items-start mb-3 sm:mb-4">
+                    <span className="text-red-500 font-mono text-xs sm:text-sm font-bold tracking-tighter uppercase">
                         ROUND {race.round} • {race.year}
                     </span>
-                    <div className="bg-slate-800 p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="bg-slate-800 p-1.5 sm:p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                         </svg>
                     </div>
                 </div>
 
-                <h3 className="text-2xl font-black text-white italic tracking-tight mb-2 group-hover:text-red-500 transition-colors uppercase">
+                <h3 className="text-lg sm:text-2xl font-black text-white italic tracking-tight mb-2 group-hover:text-red-500 transition-colors uppercase">
                     {race.event_name.replace(/_/g, ' ')}
                 </h3>
 
-                <div className="flex items-center gap-4 text-slate-500 text-xs font-mono">
+                <div className="flex items-center gap-3 sm:gap-4 text-slate-500 text-[10px] sm:text-xs font-mono">
                     <span className="flex items-center gap-1">
                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />

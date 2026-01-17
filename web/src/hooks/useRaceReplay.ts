@@ -7,6 +7,8 @@ import { getRaceFromCache, setRaceInCache, removeRaceFromCache } from '@/lib/rac
 export function useRaceReplay(year: number, round: number) {
     const [data, setData] = useState<RaceData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadingProgress, setLoadingProgress] = useState(0);
+    const [loadingStage, setLoadingStage] = useState<'init' | 'cache' | 'fetching' | 'downloading' | 'parsing' | 'ready'>('init');
     const [error, setError] = useState<string | null>(null);
     const [isFromCache, setIsFromCache] = useState(false);
     const [reloadToken, setReloadToken] = useState(0);
@@ -21,17 +23,64 @@ export function useRaceReplay(year: number, round: number) {
 
     const lastUpdateTimeRef = useRef<number | null>(null);
     const requestRef = useRef<number>();
+    const maxProgressRef = useRef<number>(0);
+
+    // Fetch with progress tracking
+    const fetchWithProgress = useCallback((url: string): Promise<string> => {
+        // Reset max progress for new fetch
+        maxProgressRef.current = 0;
+
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+
+            xhr.onprogress = (event) => {
+                let percent: number;
+                if (event.lengthComputable) {
+                    percent = Math.round((event.loaded / event.total) * 100);
+                } else {
+                    // If length not computable, show indeterminate progress based on loaded bytes
+                    // Assume ~15MB for telemetry data
+                    const estimatedTotal = 15 * 1024 * 1024;
+                    percent = Math.min(95, Math.round((event.loaded / estimatedTotal) * 100));
+                }
+
+                // Only update if progress increased (prevents flickering)
+                if (percent > maxProgressRef.current) {
+                    maxProgressRef.current = percent;
+                    setLoadingProgress(percent);
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    maxProgressRef.current = 100;
+                    setLoadingProgress(100);
+                    resolve(xhr.responseText);
+                } else {
+                    reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+                }
+            };
+
+            xhr.onerror = () => reject(new Error('Network error'));
+            xhr.send();
+        });
+    }, []);
 
     // Fetch race data
     useEffect(() => {
         async function fetchData() {
             try {
                 setLoading(true);
+                setLoadingProgress(0);
+                setLoadingStage('cache');
 
                 const cached = await getRaceFromCache(year, round);
                 if (cached) {
                     setData(cached);
                     setIsFromCache(true);
+                    setLoadingProgress(100);
+                    setLoadingStage('ready');
                     if (cached.frames.length > 0) {
                         setPlayback(prev => ({
                             ...prev,
@@ -44,6 +93,8 @@ export function useRaceReplay(year: number, round: number) {
                 }
 
                 setIsFromCache(false);
+                setLoadingStage('fetching');
+                setLoadingProgress(5);
 
                 // Try to fetch from Firebase Storage
                 // Path matches scripts/upload_race.py: races/{year}/{round}.json
@@ -53,10 +104,15 @@ export function useRaceReplay(year: number, round: number) {
                 try {
                     const url = await getDownloadURL(storageRef);
                     console.log(`[RaceReplay] Fetching from Firebase Storage: ${url.substring(0, 100)}...`);
-                    const response = await fetch(url);
-                    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    console.log(`[RaceReplay] Response OK, parsing JSON (this may take a while for large files)...`);
-                    const text = await response.text();
+
+                    setLoadingStage('downloading');
+                    setLoadingProgress(10);
+
+                    const text = await fetchWithProgress(url);
+
+                    setLoadingStage('parsing');
+                    console.log(`[RaceReplay] Response OK, parsing JSON...`);
+
                     try {
                         jsonData = JSON.parse(text);
                     } catch (parseErr) {
@@ -69,6 +125,7 @@ export function useRaceReplay(year: number, round: number) {
                 } catch (storageErr) {
                     console.error('[RaceReplay] Firebase Storage fetch failed:', storageErr);
                     console.warn('[RaceReplay] Falling back to mock API...');
+                    setLoadingStage('downloading');
                     // Fallback to mock API during setup
                     const response = await fetch(`/api/race?year=${year}&round=${round}`);
                     if (!response.ok) throw new Error('Failed to fetch fallback race data');
@@ -76,7 +133,7 @@ export function useRaceReplay(year: number, round: number) {
                     console.log(`[RaceReplay] Loaded ${jsonData.frames?.length || 0} frames from mock API`);
                 }
 
-
+                setLoadingStage('ready');
                 await setRaceInCache(year, round, jsonData);
                 setData(jsonData);
 
@@ -96,7 +153,7 @@ export function useRaceReplay(year: number, round: number) {
         }
 
         fetchData();
-    }, [year, round, reloadToken]);
+    }, [year, round, reloadToken, fetchWithProgress]);
 
     // Track bounds calculation
     const bounds = useMemo<TrackBounds | null>(() => {
@@ -275,6 +332,8 @@ export function useRaceReplay(year: number, round: number) {
     return {
         data,
         loading,
+        loadingProgress,
+        loadingStage,
         error,
         isFromCache,
         playback,

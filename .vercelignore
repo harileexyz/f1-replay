@@ -6,14 +6,11 @@ __pycache__/
 computed_data/
 *.pkl
 *.mp4
-*.png
 
-# Firebase / Secrets (DO NOT REMOVE)
+# Firebase / Secrets
 firebase-key.json
-.env
-.env.local
 
-# Web / Next.js
+# Web build artifacts (we want Vercel to build fresh)
 web/node_modules/
 web/.next/
 web/out/
@@ -23,4 +20,6 @@ web/build/
 .DS_Store
 .idea/
 .vscode/
-.vercel
+
+# Large files
+*.sqlite

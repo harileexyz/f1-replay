@@ -74,13 +74,13 @@ export default function Home() {
     return (
         <div className="min-h-screen bg-slate-950 flex flex-col selection:bg-red-500/30">
             {/* Header */}
-            <header className="p-8 border-b border-white/5 bg-slate-900/20 backdrop-blur-xl sticky top-0 z-50">
+            <header className="p-4 sm:p-8 border-b border-white/5 bg-slate-900/20 backdrop-blur-xl sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
                     <div className="flex flex-col">
-                        <h1 className="text-3xl font-black text-white italic tracking-tighter leading-none mb-1 uppercase">
-                            F1 REPLAY <span className="text-red-600 font-mono not-italic text-sm align-top ml-2">v2.0</span>
+                        <h1 className="text-xl sm:text-3xl font-black text-white italic tracking-tighter leading-none mb-1 uppercase">
+                            F1 REPLAY <span className="text-red-600 font-mono not-italic text-[10px] sm:text-sm align-top ml-1 sm:ml-2">v2.0</span>
                         </h1>
-                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em]">
+                        <p className="text-slate-500 text-[8px] sm:text-[10px] font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em]">
                             Global Telemetry Discovery
                         </p>
                     </div>
@@ -88,19 +88,19 @@ export default function Home() {
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 max-w-7xl mx-auto w-full p-8 py-12">
+            <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-8 py-6 sm:py-12">
 
                 {/* Year Selector */}
-                <div className="flex flex-col mb-16">
-                    <h2 className="text-slate-500 font-mono text-[10px] font-bold uppercase tracking-widest mb-6 border-l-2 border-red-600 pl-4">
+                <div className="flex flex-col mb-8 sm:mb-16">
+                    <h2 className="text-slate-500 font-mono text-[10px] font-bold uppercase tracking-widest mb-4 sm:mb-6 border-l-2 border-red-600 pl-4">
                         Select Season
                     </h2>
-                    <div className="flex gap-6 overflow-x-auto py-8 px-4 scrollbar-hide items-center">
+                    <div className="flex gap-3 sm:gap-6 overflow-x-auto py-4 sm:py-8 px-2 sm:px-4 scrollbar-hide items-center -mx-4 sm:mx-0">
                         {years.map(year => (
                             <button
                                 key={year}
                                 onClick={() => setSelectedYear(year)}
-                                className={`px-10 py-5 rounded-2xl font-black italic text-xl transition-all duration-300 border-2 shrink-0 ${selectedYear === year
+                                className={`px-6 sm:px-10 py-3 sm:py-5 rounded-xl sm:rounded-2xl font-black italic text-base sm:text-xl transition-all duration-300 border-2 shrink-0 ${selectedYear === year
                                     ? 'bg-red-600 border-red-500 text-white shadow-[0_0_30px_rgba(220,38,38,0.4)] -translate-y-1 z-10'
                                     : 'bg-slate-900/50 border-white/5 text-slate-500 hover:text-slate-300 hover:bg-slate-800'
                                     }`}
@@ -111,25 +111,25 @@ export default function Home() {
                     </div>
                 </div>
 
-                <div className="flex justify-between items-end mb-12">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end mb-6 sm:mb-12 gap-2">
                     <div>
-                        <h3 className="text-4xl font-black text-white tracking-tighter uppercase italic">
+                        <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tighter uppercase italic">
                             {selectedYear} Gallery
                         </h3>
-                        <p className="text-slate-500 text-sm mt-3 font-medium">
+                        <p className="text-slate-500 text-xs sm:text-sm mt-2 sm:mt-3 font-medium">
                             {processedRaces.filter(r => r.isUploaded).length} <span className="text-slate-400">of</span> {processedRaces.length} <span className="text-slate-400">races available for replay</span>
                         </p>
                     </div>
                 </div>
 
                 {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
                         {[1, 2, 3, 4, 5, 6].map(i => (
-                            <div key={i} className="h-48 bg-slate-900/50 rounded-3xl animate-pulse border border-white/5" />
+                            <div key={i} className="h-40 sm:h-48 bg-slate-900/50 rounded-2xl sm:rounded-3xl animate-pulse border border-white/5" />
                         ))}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-10">
                         {processedRaces.map((race) => (
                             <div key={race.id} className="relative group">
                                 {race.isUploaded ? (
@@ -146,18 +146,18 @@ export default function Home() {
                                     </Link>
                                 ) : (
                                     <div className="opacity-60 saturate-0 grayscale-[0.5] hover:opacity-100 hover:saturate-100 hover:grayscale-0 transition-all duration-500">
-                                        <div className="bg-slate-900/20 border border-white/5 rounded-[2rem] p-8 h-full flex flex-col justify-between group-hover:bg-slate-900/40 group-hover:border-red-600/20 transition-all">
+                                        <div className="bg-slate-900/20 border border-white/5 rounded-2xl sm:rounded-[2rem] p-4 sm:p-8 h-full flex flex-col justify-between group-hover:bg-slate-900/40 group-hover:border-red-600/20 transition-all">
                                             <div>
                                                 <div className="flex justify-between items-start mb-6">
                                                     <span className="bg-slate-800/80 text-white/50 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-tighter">Round {race.RoundNumber}</span>
                                                     <span className="text-red-600/50 text-[10px] font-bold uppercase italic tracking-widest">No Data</span>
                                                 </div>
-                                                <h4 className="text-2xl font-black text-white italic uppercase leading-[0.9] mb-4">
+                                                <h4 className="text-lg sm:text-2xl font-black text-white italic uppercase leading-[0.9] mb-4">
                                                     {race.EventName}
                                                 </h4>
                                             </div>
 
-                                            <div className="mt-10 pt-6 border-t border-white/5">
+                                            <div className="mt-6 sm:mt-10 pt-4 sm:pt-6 border-t border-white/5">
                                                 <p className="text-[9px] text-slate-600 font-bold uppercase tracking-[0.2em] mb-4">Import Instructions:</p>
                                                 <div className="bg-black/40 p-4 rounded-2xl border border-white/5 group-hover:border-red-600/10 transition-colors">
                                                     <code className="block text-[10px] text-red-500 font-mono break-all leading-relaxed whitespace-pre-wrap">
@@ -175,7 +175,7 @@ export default function Home() {
             </main>
 
             {/* Footer */}
-            <footer className="p-12 border-t border-white/5 text-center bg-slate-950 mt-20">
+            <footer className="p-6 sm:p-12 border-t border-white/5 text-center bg-slate-950 mt-10 sm:mt-20">
                 <p className="text-slate-700 text-[10px] font-mono tracking-[0.5em] uppercase">
                     F1 ANALYSIS SUITE • POWERED BY FASTF1 OPEN DATA
                 </p>
