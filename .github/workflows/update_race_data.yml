@@ -45,8 +45,14 @@ jobs:
         # Install fastf1 specifically as it's the core engine here
 
     - name: Create Firebase Key File
+      env:
+        FIREBASE_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
       run: |
-        echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}' > firebase-key.json
+        if [ -z "$FIREBASE_KEY" ]; then
+          echo "Error: FIREBASE_SERVICE_ACCOUNT_KEY secret is not set in GitHub Settings!"
+          exit 1
+        fi
+        echo "$FIREBASE_KEY" > firebase-key.json
       shell: bash
 
     - name: Process & Upload Race Data
