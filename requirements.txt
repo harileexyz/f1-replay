@@ -2,4 +2,5 @@ fastf1
 pandas
 numpy
 firebase-admin
-python-dotenvfastf1
+python-dotenv
+requests
