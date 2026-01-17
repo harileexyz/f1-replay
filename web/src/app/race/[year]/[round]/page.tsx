@@ -12,7 +12,8 @@ import { WeatherWidget } from "@/components/WeatherWidget";
 import { RainOverlay } from "@/components/RainOverlay";
 import { LapSelector } from "@/components/LapSelector";
 import { useEngineAudio } from "@/hooks/useEngineAudio";
-import { TrackMap3D } from "@/components/TrackMap3D";
+import { IsometricTrackView } from "@/components/IsometricTrackView";
+import { ThreeDRacingView } from "@/components/ThreeDRacingView";
 import { TireDegradationChart } from "@/components/TireDegradationChart";
 import { HeadToHeadMode } from "@/components/HeadToHead";
 import Link from "next/link";
@@ -38,8 +39,9 @@ export default function RaceReplayPage() {
         availableLaps
     } = useRaceReplay(year, round);
 
-    const [activeTab, setActiveTab] = useState<'track' | 'telemetry' | 'tires' | 'h2h'>('track');
+    const [activeTab, setActiveTab] = useState<'track' | 'track3d' | 'telemetry' | 'tires' | 'h2h'>('track');
     const [viewMode, setViewMode] = useState<'map' | 'chase' | 'cockpit'>('map');
+    const [view3dMode, setView3dMode] = useState<'isometric' | 'racing'>('isometric');
     const [is3D, setIs3D] = useState(false);
     const [isMobileHUDOpen, setIsMobileHUDOpen] = useState(false);
     const [h2hDriver2, setH2hDriver2] = useState<string | null>(null);
@@ -223,7 +225,17 @@ export default function RaceReplayPage() {
                                     <circle cx="12" cy="12" r="3" strokeWidth={2} />
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v2m0 16v2M2 12h2m16 0h2" />
                                 </svg>
-                                <span className="hidden xs:inline">TRACK</span>
+                                <span className="hidden xs:inline">2D</span>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('track3d')}
+                                className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-black transition-all flex items-center gap-1.5 sm:gap-3 tracking-widest ${activeTab === 'track3d' ? 'bg-red-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-200'
+                                    }`}
+                            >
+                                <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
+                                </svg>
+                                <span className="hidden xs:inline">3D</span>
                             </button>
                             <button
                                 onClick={() => setActiveTab('telemetry')}
@@ -300,6 +312,51 @@ export default function RaceReplayPage() {
                                 selectedDriver={playback.selectedDriver}
                                 ghostFrame={ghostFrame}
                                 viewMode="map"
+                                onDriverClick={actions.selectDriver}
+                            />
+                        )}
+                    </div>
+                    <div className={`absolute inset-0 p-2 sm:p-6 transition-all duration-500 ${activeTab === 'track3d' ? 'opacity-100 scale-100 z-10' : 'opacity-0 scale-95 pointer-events-none'}`}>
+                        {/* 3D View Mode Toggle */}
+                        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-slate-900/90 backdrop-blur-sm p-1 rounded-xl border border-white/10">
+                            <button
+                                onClick={() => setView3dMode('isometric')}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${view3dMode === 'isometric'
+                                        ? 'bg-red-600 text-white shadow-lg'
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    }`}
+                            >
+                                ISOMETRIC
+                            </button>
+                            <button
+                                onClick={() => setView3dMode('racing')}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${view3dMode === 'racing'
+                                        ? 'bg-red-600 text-white shadow-lg'
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    }`}
+                            >
+                                3D RACING
+                            </button>
+                        </div>
+
+                        {/* Isometric View */}
+                        {bounds && currentFrame && view3dMode === 'isometric' && (
+                            <IsometricTrackView
+                                data={data}
+                                currentFrame={currentFrame}
+                                bounds={bounds}
+                                selectedDriver={playback.selectedDriver}
+                                onDriverClick={actions.selectDriver}
+                            />
+                        )}
+
+                        {/* 3D Racing View */}
+                        {bounds && currentFrame && view3dMode === 'racing' && (
+                            <ThreeDRacingView
+                                data={data}
+                                currentFrame={currentFrame}
+                                bounds={bounds}
+                                selectedDriver={playback.selectedDriver}
                                 onDriverClick={actions.selectDriver}
                             />
                         )}

@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { collection, query, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { RaceCard } from "@/components/RaceCard";
+import { NewsCarousel } from "@/components/NewsCarousel";
+import { NewsSection } from "@/components/NewsSection";
+import { StandingsWidget } from "@/components/StandingsWidget";
 import Link from "next/link";
 
 interface Race {
@@ -73,22 +76,23 @@ export default function Home() {
 
     return (
         <div className="min-h-screen bg-slate-950 flex flex-col selection:bg-red-500/30">
-            {/* Header */}
-            <header className="p-4 sm:p-8 border-b border-white/5 bg-slate-900/20 backdrop-blur-xl sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto flex justify-between items-center">
-                    <div className="flex flex-col">
-                        <h1 className="text-xl sm:text-3xl font-black text-white italic tracking-tighter leading-none mb-1 uppercase">
-                            F1 REPLAY <span className="text-red-600 font-mono not-italic text-[10px] sm:text-sm align-top ml-1 sm:ml-2">v2.0</span>
-                        </h1>
-                        <p className="text-slate-500 text-[8px] sm:text-[10px] font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em]">
-                            Global Telemetry Discovery
-                        </p>
+
+
+            <NewsCarousel />
+
+            <div className="max-w-7xl mx-auto w-full px-4 sm:px-8 pt-12">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                    <div className="lg:col-span-2">
+                        <NewsSection />
+                    </div>
+                    <div>
+                        <StandingsWidget />
                     </div>
                 </div>
-            </header>
+            </div>
 
             {/* Main Content */}
-            <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-8 py-6 sm:py-12">
+            <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-8 py-10 sm:py-12">
 
                 {/* Year Selector */}
                 <div className="flex flex-col mb-8 sm:mb-16">
@@ -174,12 +178,6 @@ export default function Home() {
                 )}
             </main>
 
-            {/* Footer */}
-            <footer className="p-6 sm:p-12 border-t border-white/5 text-center bg-slate-950 mt-10 sm:mt-20">
-                <p className="text-slate-700 text-[10px] font-mono tracking-[0.5em] uppercase">
-                    F1 ANALYSIS SUITE • POWERED BY FASTF1 OPEN DATA
-                </p>
-            </footer>
         </div>
     );
 }
