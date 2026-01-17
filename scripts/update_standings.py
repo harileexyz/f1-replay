@@ -1,12 +1,14 @@
 import requests
 import json
 import os
-import datetime
+import sys
+import firebase_admin
+from firebase_admin import credentials, firestore
+import logging
 
-# Setup directories
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'web', 'src', 'data')
-os.makedirs(DATA_DIR, exist_ok=True)
-OUTPUT_FILE = os.path.join(DATA_DIR, 'standings.ts')
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # API Endpoints
 # Using 2024 specifically as requested, or 'current' for live data
@@ -29,6 +31,38 @@ TEAM_MAP = {
     'alpine': {'color': '#0093CC', 'name': 'Alpine', 'logo': 'https://media.formula1.com/content/dam/fom-website/teams/2024/alpine-logo.png'},
     'sauber': {'color': '#52E252', 'name': 'Kick Sauber', 'logo': 'https://media.formula1.com/content/dam/fom-website/teams/2024/kick-sauber-logo.png'},
 }
+
+def init_firebase():
+    if not firebase_admin._apps:
+        # Try to find credentials
+        cred_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+        
+        if not cred_path:
+             # Check explicitly for our CI/CD key file first
+            if os.path.exists("firebase-key.json"):
+                cred_path = "firebase-key.json"
+            else:
+                 # Try common locations
+                possible_paths = [
+                    os.path.join(os.path.dirname(__file__), '..', 'firebase-key.json'),
+                    os.path.join(os.path.dirname(__file__), '..', 'firebase-credentials.json'),
+                    os.path.join(os.path.dirname(__file__), '..', 'service-account.json'),
+                ]
+                for path in possible_paths:
+                    if os.path.exists(path):
+                        cred_path = path
+                        break
+        
+        if cred_path and os.path.exists(cred_path):
+            cred = credentials.Certificate(cred_path)
+            firebase_admin.initialize_app(cred)
+            logger.info(f"Initialized Firebase with credentials from: {cred_path}")
+        else:
+            # Use default credentials (for GCP environments)
+            logger.info("Initialized Firebase with Application Default Credentials")
+            firebase_admin.initialize_app()
+    
+    return firestore.client()
 
 def get_team_id(constructor_id):
     # Map API constructor IDs to our internal IDs if needed
@@ -63,11 +97,6 @@ def fetch_driver_standings():
             # Construct meaningful IDs and URLs
             driver_name = f"{driver['givenName']} {driver['familyName']}"
             driver_id = driver['driverId']
-            # Fallback for images - in a real app better to fetch from F1 website map
-            driver_code = driver.get('code', 'UNK')
-            
-            # Attempt to build an F1.com style image URL (this is a guess, usually needs a map)
-            # Using generic placeholders from the mock for safety if we can't map strictly
             
             team_id = get_team_id(constructor['constructorId'])
             team_info = TEAM_MAP.get(team_id, {'color': '#000000', 'name': constructor['name']})
@@ -80,9 +109,8 @@ def fetch_driver_standings():
                 'team': team_info['name'],
                 'points': float(item['points']),
                 'wins': int(item['wins']),
-                'podiums': 0, # Ergast doesn't give podium count in standings directly, would need to calc. Leaving 0 or generic? 
-                 # Actually let's assume wins is enough for now or use a placeholder
-                'trend': 'SAME', # Live trend requires previous race comparison. 
+                'podiums': 0, 
+                'trend': 'SAME', 
                 'avatarUrl': f"https://media.formula1.com/content/dam/fom-website/drivers/{driver['givenName'][0].upper()}/{driver['code'].upper()}01_{driver['givenName']}_{driver['familyName']}/{driver['code'].lower()}01.png", 
                 'teamColor': team_info['color']
             })
@@ -116,74 +144,46 @@ def fetch_constructor_standings():
                 'trend': 'SAME',
                 'logoUrl': team_info['logo'],
                 'teamColor': team_info['color'],
-                'drivers': [] # Would need another call to fill this perfectly
+                'drivers': [] 
             })
         return formatted_standings
     except Exception as e:
         print(f"Error fetching constructor standings: {e}")
         return []
 
-def generate_ts_file(drivers, constructors):
-    print(f"Generating {OUTPUT_FILE}...")
+def upload_standings(db, drivers, constructors):
+    print("Uploading standings to Firebase...")
     
-    ts_content = f"""export interface StandingItem {{
-    position: number;
-    driverId: string;
-    constructorId: string;
-    name: string;
-    team: string;
-    points: number;
-    wins: number;
-    podiums: number;
-    trend: 'UP' | 'DOWN' | 'SAME';
-    trendPos?: number;
-    avatarUrl: string;
-    teamColor: string;
-}}
-
-export interface ConstructorStandingItem {{
-    position: number;
-    constructorId: string;
-    name: string;
-    points: number;
-    wins: number;
-    podiums: number;
-    trend: 'UP' | 'DOWN' | 'SAME';
-    logoUrl: string;
-    teamColor: string;
-    drivers: string[];
-}}
-
-export const DRIVER_STANDINGS_2024: StandingItem[] = {json.dumps(drivers, indent=4)};
-
-export const CONSTRUCTOR_STANDINGS_2024: ConstructorStandingItem[] = {json.dumps(constructors, indent=4)};
-
-// Mock history data preserved for the graph until we build the rigorous history fetcher
-export const POINTS_HISTORY_DATA = [
-    {{ round: 'BHR', VER: 25, LEC: 12, NOR: 10, HAM: 8 }},
-    {{ round: 'SAU', VER: 50, LEC: 27, NOR: 18, HAM: 14 }},
-    {{ round: 'AUS', VER: 50, LEC: 45, NOR: 33, HAM: 20 }},
-    {{ round: 'JPN', VER: 76, LEC: 57, NOR: 45, HAM: 26 }},
-    {{ round: 'CHN', VER: 101, LEC: 72, NOR: 60, HAM: 36 }},
-    {{ round: 'MIA', VER: 120, LEC: 90, NOR: 85, HAM: 40 }},
-    {{ round: 'EMI', VER: 145, LEC: 108, NOR: 103, HAM: 50 }},
-    {{ round: 'MON', VER: 155, LEC: 133, NOR: 113, HAM: 60 }},
-    {{ round: 'CAN', VER: 180, LEC: 133, NOR: 128, HAM: 75 }},
-    {{ round: 'ESP', VER: 205, LEC: 145, NOR: 146, HAM: 85 }}
-];
-"""
+    # We store standings in a document per season, e.g. 'standings/2024'
+    # This document will contain two sub-fields or sub-collections: 'drivers' and 'constructors'
+    # To keep it simple and querying fast, let's just make it a single document with arrays.
     
-    with open(OUTPUT_FILE, 'w') as f:
-        f.write(ts_content)
-    print("Done!")
+    doc_ref = db.collection('standings').document(YEAR)
+    
+    data = {
+        'season': int(YEAR),
+        'updated_at': firestore.SERVER_TIMESTAMP,
+        'driver_standings': drivers,
+        'constructor_standings': constructors
+    }
+    
+    doc_ref.set(data, merge=True)
+    print(f"Successfully uploaded standings for {YEAR}!")
 
-if __name__ == "__main__":
+def main():
+    print("=" * 60)
+    print("F1 Standings Uploader")
+    print("=" * 60)
+
+    db = init_firebase()
+
     drivers = fetch_driver_standings()
     constructors = fetch_constructor_standings()
     
-    # If API fails (e.g. rate limit or downtime for 2024/future), fallback to maintaining existing or empty?
-    # For now, we write what we found.
     if drivers and constructors:
-        generate_ts_file(drivers, constructors)
+        upload_standings(db, drivers, constructors)
     else:
-        print("Failed to fetch complete data, not overwriting file.")
+        print("Failed to fetch complete data, skipping upload.")
+
+if __name__ == "__main__":
+    main()
