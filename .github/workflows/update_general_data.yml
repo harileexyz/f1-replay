@@ -36,7 +36,8 @@ jobs:
           echo "Error: FIREBASE_SERVICE_ACCOUNT_KEY secret is not set in GitHub Settings!"
           exit 1
         fi
-        echo "$FIREBASE_KEY" > firebase-key.json
+        # Use python to write the file to avoid shell quoting issues
+        python -c "import os; open('firebase-key.json', 'w').write(os.environ['FIREBASE_KEY'])"
       shell: bash
 
     - name: Fetch & Update Drivers/Teams
