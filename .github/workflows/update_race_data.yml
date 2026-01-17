@@ -1,0 +1,67 @@
+name: Update Race Replay Data
+
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: 'Season Year'
+        required: true
+        default: '2024'
+      round:
+        description: 'Race Round Number'
+        required: true
+        type: string # Using string to allow input like "1"
+      session_type:
+        description: 'Session Type (R=Race, Q=Qualifying, S=Sprint)'
+        required: true
+        default: 'R'
+        type: choice
+        options:
+        - R
+        - Q
+        - S
+        - SQ
+
+jobs:
+  process-race-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60 # Race processing can be heavy, give it time
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install fastf1 pandas numpy requests firebase-admin
+        # Install fastf1 specifically as it's the core engine here
+
+    - name: Create Firebase Key File
+      run: |
+        echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}' > firebase-key.json
+      shell: bash
+
+    - name: Process & Upload Race Data
+      env:
+        FIREBASE_CREDENTIALS_PATH: firebase-key.json
+        # FastF1 needs a cache directory, GitHub Actions runners have temp space
+      run: |
+        echo "Starting race data processing for ${{ inputs.year }} Round ${{ inputs.round }}..."
+        mkdir -p fastf1_cache
+        python scripts/upload_race.py \
+          --year ${{ inputs.year }} \
+          --round ${{ inputs.round }} \
+          --session-type ${{ inputs.session_type }} \
+          --credentials firebase-key.json
+
+    - name: Cleanup credentials
+      if: always()
+      run: rm -f firebase-key.json
