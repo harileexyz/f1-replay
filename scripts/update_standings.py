@@ -137,7 +137,8 @@ def fetch_driver_standings():
             
             # Construct meaningful IDs and URLs
             driver_name = f"{driver['givenName']} {driver['familyName']}"
-            driver_id = driver['driverId']
+            # Ensure ID matches the format used in upload_drivers.py (full_name -> lowercase_snake_case)
+            driver_id = driver_name.lower().replace(' ', '_').replace('-', '_')
             driver_code = driver.get('code', 'UNK')
             
             # Use high-res image mapping
