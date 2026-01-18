@@ -9,7 +9,7 @@ import { POINTS_HISTORY_DATA } from '@/data/standings'; // Keep graph data for n
 const AVAILABLE_YEARS = [2025, 2024, 2023, 2022];
 
 export default function StandingsPage() {
-    const [year, setYear] = useState(2024);
+    const [year, setYear] = useState(2025);
     const [view, setView] = useState<'DRIVERS' | 'TEAMS'>('DRIVERS');
 
     const { data, loading, error } = useStandings(year);
@@ -27,21 +27,28 @@ export default function StandingsPage() {
                                 {loading ? 'Fetching Live Data...' : 'Official Championship Standings'}
                             </span>
                         </div>
-                        <div className="flex flex-wrap items-baseline gap-4">
+                        <div className="flex flex-wrap items-center gap-6">
                             <h1 className="text-5xl sm:text-7xl font-black italic text-white uppercase tracking-tighter leading-[0.8]">
-                                {year} Standings
+                                Standings
                             </h1>
 
                             {/* Year Selector */}
-                            <select
-                                value={year}
-                                onChange={(e) => setYear(Number(e.target.value))}
-                                className="bg-transparent text-slate-500 text-3xl font-black italic border-none focus:ring-0 cursor-pointer hover:text-white transition-colors"
-                            >
-                                {AVAILABLE_YEARS.map(y => (
-                                    <option key={y} value={y}>{y}</option>
-                                ))}
-                            </select>
+                            <div className="relative group">
+                                <select
+                                    value={year}
+                                    onChange={(e) => setYear(Number(e.target.value))}
+                                    className="appearance-none bg-slate-900 text-red-500 font-black text-3xl sm:text-4xl italic pl-6 pr-12 py-2 rounded-xl border-2 border-slate-800 hover:border-red-600 hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-red-500/20 cursor-pointer transition-all duration-300"
+                                >
+                                    {AVAILABLE_YEARS.map(y => (
+                                        <option key={y} value={y} className="text-xl">{y}</option>
+                                    ))}
+                                </select>
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-red-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-6 h-6">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
