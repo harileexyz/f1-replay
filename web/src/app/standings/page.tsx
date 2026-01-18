@@ -6,7 +6,7 @@ import { DriverStandingsTable, ConstructorStandingsTable } from '@/components/St
 import { ChampionshipGraph } from '@/components/ChampionshipGraph';
 import { POINTS_HISTORY_DATA } from '@/data/standings'; // Keep graph data for now as we didn't backend-ify it yet
 
-const AVAILABLE_YEARS = [2024, 2023, 2022];
+const AVAILABLE_YEARS = [2025, 2024, 2023, 2022];
 
 export default function StandingsPage() {
     const [year, setYear] = useState(2024);
