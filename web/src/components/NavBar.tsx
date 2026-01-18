@@ -91,8 +91,8 @@ export function NavBar() {
 
             {/* Mobile Menu Overlay */}
             <div className={`
-                fixed inset-0 bg-slate-950 backdrop-blur-2xl transition-all duration-500 sm:hidden flex flex-col items-center justify-center gap-8
-                ${isMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}
+                fixed inset-0 bg-[#020617] transition-all duration-500 sm:hidden flex flex-col items-center justify-center gap-8
+                ${isMenuOpen ? 'opacity-100 visible z-40' : 'opacity-0 invisible pointer-events-none -z-10'}
             `}>
                 <div className="flex flex-col items-center gap-6 w-full px-8">
                     {navItems.map((item, i) => (
@@ -104,7 +104,6 @@ export function NavBar() {
                                 text-3xl font-black italic uppercase tracking-tighter transition-all duration-300 w-full text-center py-4 border-b border-white/5
                                 ${pathname === item.href ? 'text-red-500' : 'text-white hover:text-red-500'}
                             `}
-                            style={{ transitionDelay: `${i * 100}ms` }}
                         >
                             {item.label}
                         </Link>
