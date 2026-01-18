@@ -32,6 +32,47 @@ TEAM_MAP = {
     'sauber': {'color': '#52E252', 'name': 'Kick Sauber', 'logo': 'https://media.formula1.com/content/dam/fom-website/teams/2024/kick-sauber-logo.png'},
 }
 
+def get_high_res_image(code):
+    """Return high-res image URL for the driver code."""
+    # Map 'CODE' to 'ID_Name'
+    mapping = {
+        "VER": "MAXVER01_Max_Verstappen",
+        "PER": "SERPER01_Sergio_Perez",
+        "LEC": "CHALEC01_Charles_Leclerc",
+        "SAI": "CARSAI01_Carlos_Sainz",
+        "NOR": "LANNOR01_Lando_Norris",
+        "PIA": "OSCPIA01_Oscar_Piastri",
+        "HAM": "LEWHAM01_Lewis_Hamilton",
+        "RUS": "GEORUS01_George_Russell",
+        "ALO": "FERALO01_Fernando_Alonso",
+        "STR": "LANSTR01_Lance_Stroll",
+        "GAS": "PIEGAS01_Pierre_Gasly",
+        "OCO": "ESTOCO01_Esteban_Ocon",
+        "ALB": "ALEALB01_Alexander_Albon",
+        "SAR": "LOGSAR01_Logan_Sargeant",
+        "COL": "FRACOL01_Franco_Colapinto",
+        "TSU": "YUKTSU01_Yuki_Tsunoda",
+        "RIC": "DANRIC01_Daniel_Ricciardo",
+        "LAW": "LIALAW01_Liam_Lawson",
+        "BOT": "VALBOT01_Valtteri_Bottas",
+        "ZHO": "GUAZHO01_Guanyu_Zhou",
+        "HUL": "NICHUL01_Nico_Hulkenberg",
+        "MAG": "KEVMAG01_Kevin_Magnussen",
+        "BEA": "OLIBEA01_Oliver_Bearman",
+        "ANT": "KIMANT01_Kimi_Antonelli",
+        "BOR": "GABBOR01_Gabriel_Bortoleto",
+        "HAD": "ISAHAD01_Isack_Hadjar",
+        "DOO": "JACDOO01_Jack_Doohan",
+    }
+    
+    if code in mapping:
+        path_name = mapping[code]
+        file_id = path_name.split('_')[0].lower()
+        first_letter = path_name[0]
+        return f"https://media.formula1.com/content/dam/fom-website/drivers/{first_letter}/{path_name}/{file_id}.png"
+    
+    return None
+
 def init_firebase():
     if not firebase_admin._apps:
         # Try to find credentials
@@ -97,7 +138,14 @@ def fetch_driver_standings():
             # Construct meaningful IDs and URLs
             driver_name = f"{driver['givenName']} {driver['familyName']}"
             driver_id = driver['driverId']
+            driver_code = driver.get('code', 'UNK')
             
+            # Use high-res image mapping
+            avatar_url = get_high_res_image(driver_code)
+            if not avatar_url:
+                 # Fallback if mapping fails
+                 avatar_url = f"https://media.formula1.com/content/dam/fom-website/drivers/{driver.get('givenName', 'A')[0].upper()}/{driver_code.upper()}01_{driver.get('givenName')}_{driver.get('familyName')}/{driver_code.lower()}01.png"
+
             team_id = get_team_id(constructor['constructorId'])
             team_info = TEAM_MAP.get(team_id, {'color': '#000000', 'name': constructor['name']})
             
@@ -111,7 +159,7 @@ def fetch_driver_standings():
                 'wins': int(item['wins']),
                 'podiums': 0, 
                 'trend': 'SAME', 
-                'avatarUrl': f"https://media.formula1.com/content/dam/fom-website/drivers/{driver['givenName'][0].upper()}/{driver['code'].upper()}01_{driver['givenName']}_{driver['familyName']}/{driver['code'].lower()}01.png", 
+                'avatarUrl': avatar_url, 
                 'teamColor': team_info['color']
             })
             
