@@ -8,7 +8,7 @@ const navItems = [
     { href: '/', label: 'Home' },
     { href: '/drivers', label: 'Drivers' },
     { href: '/teams', label: 'Teams' },
-    { href: '/race/2024/1', label: 'Race Replay', isAction: true },
+    { href: '/races', label: 'Race Replay', isAction: true },
 ];
 
 export function NavBar() {
