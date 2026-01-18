@@ -47,20 +47,10 @@ jobs:
         echo "Running driver update script..."
         python scripts/upload_drivers.py --year ${{ inputs.year }}
 
-    - name: Update Standings Data (TypeScript)
+    - name: Update Standings Data (Firebase)
       run: |
         echo "Running standings update script..."
-        # This updates the web/src/data/standings.ts file with fresh API data
         python scripts/update_standings.py
-
-    # Since update_standings.py modifies a local file, we need to commit deeper changes back to the repo
-    # so the website rebuilds with the new static data.
-    - name: Commit & Push Changes
-      uses: stefanzweifel/git-auto-commit-action@v5
-      with:
-        commit_message: "chore(data): Auto-update F1 standings for ${{ inputs.year }}"
-        file_pattern: 'web/src/data/*.ts'
-        branch: ${{ github.ref }}
 
     - name: Cleanup credentials
       if: always()
