@@ -6,7 +6,7 @@ import { useStandings } from '@/hooks/useStandings';
 
 export function StandingsWidget() {
     // Determine current year or default to 2024
-    const currentYear = 2024;
+    const currentYear = 2025;
     const { data, loading } = useStandings(currentYear);
 
     // If loading, show a skeleton or return null
