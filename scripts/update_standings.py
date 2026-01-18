@@ -174,6 +174,15 @@ def main():
     print("=" * 60)
     print("F1 Standings Uploader")
     print("=" * 60)
+    
+    import argparse
+    parser = argparse.ArgumentParser(description='Update F1 Standings')
+    parser.add_argument('--year', type=str, default="2024", help='Season year')
+    args = parser.parse_args()
+    
+    global YEAR, BASE_URL
+    YEAR = args.year
+    BASE_URL = f"https://api.jolpi.ca/ergast/f1/{YEAR}"
 
     db = init_firebase()
 

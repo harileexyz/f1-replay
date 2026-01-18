@@ -49,8 +49,8 @@ jobs:
 
     - name: Update Standings Data (Firebase)
       run: |
-        echo "Running standings update script..."
-        python scripts/update_standings.py
+        echo "Running standings update script for ${{ inputs.year }}..."
+        python scripts/update_standings.py --year ${{ inputs.year }}
 
     - name: Cleanup credentials
       if: always()
